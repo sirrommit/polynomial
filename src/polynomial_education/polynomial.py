@@ -157,7 +157,7 @@ class Rational():
     def __str__(self):
         if self.denominator == 1:
             return f"{self.numerator}"
-        return f"{self.numerator}/{self.denominator}"
+        return f"\\frac{{{self.numerator}}}{{{self.denominator}}}"
 
     ##### Binary Operators
     def __add__(self, other):
@@ -425,13 +425,6 @@ class Rational():
             if self.denominator == int(self.denominator):
                 self.denominator = int(self.denominator)
 
-
-if __name__ == "__main__":
-    a1 = Rational('5/3')
-    print(Rational(1))
-    print(a1)
-    print(a1+1)
-    print("zeropower",a1 ** 0)
 
 class Polynomial():
     """ General class for storing polynomial functions of degree n
@@ -810,6 +803,11 @@ class Polynomial():
 
 
 if __name__ == "__main__":
+    a1 = Rational('5/3')
+    print(Rational(1))
+    print(a1)
+    print(a1+1)
+    print("zeropower",a1 ** 0)
     h_str = 'h(t)=2/3+3/5t+5t^3'
     h = Polynomial(h_str)
     print(type(h))
@@ -818,10 +816,6 @@ if __name__ == "__main__":
     print(h)
     a1 = Rational('5/3')
     print(f"{h.name}({a1})={h(a1)}")
-    print(Rational(1))
-    print(a1)
-    print(a1+1)
-    print("zeropower",a1 ** 0)
     y = Polynomial([2,4,1,5,2])
     print(y)
     print(f"{y.name}({2})={y(2)}")
@@ -831,8 +825,8 @@ if __name__ == "__main__":
     print(f"{y.name}({float(a1)})={y(float(a1))}")
     a = Polynomial([1,1])
     b = Polynomial([1,-1])
-    #c= a * b
-    #print(c.print(reverse=True))
+    c= a * b
+    print(c.print(reverse=True))
     div, rem = Polynomial([7,1,-1,2,-3,4]).synthetic_division(Rational('2/3'))
     print(f"{div.print(reverse=True)} R:{rem}")
     facs = Polynomial([3,5,2]).factor()
