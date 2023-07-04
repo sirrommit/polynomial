@@ -42,7 +42,7 @@ class Primes():
         self.primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47,
                        53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
                        109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167,
-                       173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229]
+                       173, 179, 181, 191, 193, 197, 199, 211, 223, 227]
         self.six_mult = 38
 
     def is_prime(self, num):
@@ -52,36 +52,38 @@ class Primes():
         if num < self.primes[-1]:
             return False
         root = math.sqrt(num)
-        fac = 6 * self.six_mult - 1
-        while fac < root:
+        for fac in self.primes:
             if num % fac == 0:
                 return False
-            if num % (fac+2) == 0:
+        fac = 6 * self.six_mult
+        while fac <= root:
+            if num % (fac + 1) == 0:
+                return False
+            if num % (fac + 5) == 0:
                 return False
             fac += 6
         return True
 
     def add_primes(self, upto):
         """ Add prime numbers up to the upto number. """
-        upto = (upto + 1) // 6
-        while self.six_mult < upto:
-            self.six_mult += 1
-            if self.is_prime(6 * self.six_mult - 1):
-                self.primes.append(6 * self.six_mult - 1)
+        while self.six_mult * 6 < upto:
             if self.is_prime(6 * self.six_mult + 1):
                 self.primes.append(6 * self.six_mult + 1)
+            if self.is_prime(6 * self.six_mult + 5):
+                self.primes.append(6 * self.six_mult + 5)
+            self.six_mult += 1
 
     def add_next_prime(self):
         """ Add at least one more prime number to list of primes """
         added = False
         while not added:
-            self.six_mult += 1
-            if self.is_prime(6 * self.six_mult - 1):
-                self.primes.append(6 * self.six_mult - 1)
-                added = True
             if self.is_prime(6 * self.six_mult + 1):
                 self.primes.append(6 * self.six_mult + 1)
                 added = True
+            if self.is_prime(6 * self.six_mult + 5):
+                self.primes.append(6 * self.six_mult + 5)
+                added = True
+            self.six_mult += 1
 
     def factor(self, num):
         """ Returns a prime factorization as a dictionary with primes as keys and
@@ -136,7 +138,9 @@ class Rational():
                         b_var = int(frac[0])
                         c_var = int(frac[1])
                 else:
-                    raise TypeError(f"Invalid string {substr} for Rational number")
+                    raise ValueError(f"Invalid string {substr} for Rational number")
+            else:
+                raise ValueError(f"Invalid string {substr} for Rational number")
             return a_var, b_var, c_var
 
         if isinstance(a, str):
@@ -149,9 +153,51 @@ class Rational():
                 self.numerator = int(a)
                 self.denominator = int(b)
         else:
-            self.numerator = int(a) * int(c) + int(b)
-            self.denominator = int(c)
+            if a >= 0:
+                self.numerator = int(a) * int(c) + int(b)
+                self.denominator = int(c)
+            else:
+                self.numerator = int(a) * int(c) - int(b)
+                self.denominator = int(c)
         self.lowest_terms()
+
+    ###### Comparison Operators
+    def __lt__(self, other):
+        if isinstance(other, float):
+            return float(self) < other
+        if isinstance(other, int):
+            other = Rational(other)
+        lcm = self @ other
+        return self.get_numerator(lcm) < other.get_numerator(lcm)
+
+    def __le__(self, other):
+        if self == other or self < other:
+            return True
+        return False
+
+    def __eq__(self, other):
+        if isinstance(other, float):
+            return float(self) == other
+        if isinstance(other, int):
+            other = Rational(other)
+        lcm = self @ other
+        return self.get_numerator(lcm) == other.get_numerator(lcm)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __gt__(self, other):
+        if isinstance(other, float):
+            return float(self) > other
+        if isinstance(other, int):
+            other = Rational(other)
+        lcm = self @ other
+        return self.get_numerator(lcm) > other.get_numerator(lcm)
+
+    def __ge__(self, other):
+        if self == other or self > other:
+            return True
+        return False
 
     ##### String Representations
     def __str__(self):
@@ -165,7 +211,7 @@ class Rational():
             return Rational(self.numerator + other * self.denominator,
                             self.denominator)
         if isinstance(other, float):
-            return float(self) * other
+            return float(self) + other
         lcm_den = self.lcm(other)
         return Rational(self.get_numerator(denominator=lcm_den) +
                         other.get_numerator(denominator=lcm_den), lcm_den)
@@ -184,7 +230,7 @@ class Rational():
     def __truediv__(self, other):
         if isinstance(other, int):
             return Rational(self.numerator, self.denominator *
-                            other).lowest_terms()
+                            other)
         if isinstance(other, float):
             return float(self) / other
         return self * (~other)
@@ -193,19 +239,22 @@ class Rational():
         return float(self) // float(other)
 
     def __mod__(self, other):
-        return NotImplemented
+        return divmod(self, other)[1]
 
     def __divmod__(self, other):
         """ Returns pair (div, remainder) """
-        return NotImplemented
+        if isinstance(other, float):
+            return divmod(float(self), other)
+        mult = (float(self) - float(self) % float(other)) // other
+        return (mult, self - other * mult)
 
     def __pow__(self, other):
         if not isinstance(other, int):
             return float(self) ** float(other)
-        if other < 0:
-            return (~self) ** (-other)
         if other == 0:
             return Rational(1)
+        if other < 0:
+            return (~self) ** (-other)
         new_rat = Rational(self.numerator, self.denominator)
         # Multiply one at a time so that we can find lowest terms each time and
         # keep the size of the integers reasonable
@@ -223,23 +272,26 @@ class Rational():
         return self + other
 
     def __rsub__(self, other):
-        return self - other
+        return -self + other
 
     def __rmul__(self, other):
         return self * other
 
     def __rtruediv__(self, other):
-        return self / other
+        return ~self * other
 
     def __rfloordiv__(self, other):
         return self // other
 
     def __rmod__(self, other):
-        return NotImplemented
+        return divmod(self, other)[1]
 
     def __rdivmod__(self, other):
         """ Returns pair (div, remainder) """
-        return NotImplemented
+        if isinstance(other, float):
+            return divmod(float(self), other)
+        mult = (float(self) - float(self) % float(other)) // other
+        return (mult, self - other * mult)
 
     def __rpow__(self, other):
         return self ** other
@@ -304,44 +356,6 @@ class Rational():
     def __imatmul__(self, other):
         """ @ : used here for LCM """
         return NotImplemented
-
-    ###### Comparison Operators
-    def __lt__(self, other):
-        if isinstance(other, float):
-            return float(self) < other
-        if isinstance(other, int):
-            other = Rational(other)
-        lcm = self @ other
-        return self.get_numerator(lcm) < other.get_numerator(lcm)
-
-    def __le__(self, other):
-        if self == other or self < other:
-            return True
-        return False
-
-    def __eq__(self, other):
-        if isinstance(other, float):
-            return float(self) == other
-        if isinstance(other, int):
-            other = Rational(other)
-        lcm = self @ other
-        return self.get_numerator(lcm) == other.get_numerator(lcm)
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __gt__(self, other):
-        if isinstance(other, float):
-            return float(self) > other
-        if isinstance(other, int):
-            other = Rational(other)
-        lcm = self @ other
-        return self.get_numerator(lcm) > other.get_numerator(lcm)
-
-    def __ge__(self, other):
-        if self == other or self > other:
-            return True
-        return False
 
     ###### Unary Operators
     def __neg__(self):
@@ -410,6 +424,16 @@ class Rational():
     ######### Modify in-place
     def lowest_terms(self):
         """ Converts rational number to lowest terms """
+        negative = False
+        if self.numerator < 0 and self.denominator < 0:
+            self.numerator = -self.numerator
+            self.denominator = -self.denominator
+        elif self.denominator < 0 and self.numerator >= 0:
+            negative = True
+            self.denominator = - self.denominator
+        elif self.denominator > 0 and self.numerator <= 0:
+            negative = True
+            self.numerator = -self.numerator
         num_fac = Rational.prime.factor(self.numerator)
         den_fac = Rational.prime.factor(self.denominator)
         common_fac = 1
@@ -424,6 +448,8 @@ class Rational():
         if isinstance(self.denominator, float):
             if self.denominator == int(self.denominator):
                 self.denominator = int(self.denominator)
+        if negative:
+            self.numerator = -self.numerator
 
 
 class Polynomial():
