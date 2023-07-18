@@ -7,18 +7,22 @@ class TestIsPrime(unittest.TestCase):
     def test_low_yes(self):
         prime_obj = Primes()
         self.assertTrue(prime_obj.is_prime(131))
+        self.assertTrue(131 in prime_obj)
 
     def test_low_no(self):
         prime_obj = Primes()
         self.assertFalse(prime_obj.is_prime(35))
+        self.assertFalse(35 in prime_obj)
 
     def test_high_yes(self):
         prime_obj = Primes()
         self.assertTrue(prime_obj.is_prime(241))
+        self.assertTrue(241 in prime_obj)
 
     def test_high_no(self):
         prime_obj = Primes()
         self.assertFalse(prime_obj.is_prime(933))
+        self.assertFalse(933 in prime_obj)
 
 class TestAddPrimes(unittest.TestCase):
     def test_upto_277(self):

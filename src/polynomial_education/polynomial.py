@@ -20,18 +20,6 @@ def all_factor(num):
     neg_factors = [-1 * fac for fac in pos_factors[::-1]]
     return neg_factors + pos_factors
 
-def dict_a_not_b(a_dict, b_dict):
-    """ returns a dictionary with keys from a_dict decremented by quantities
-    from b_dict. Used as a helper function in finding the LCM of two integers.
-    """
-    out_dict = {}
-    for key, val in a_dict.items():
-        if key not in b_dict.keys():
-            out_dict[key] = val
-        elif b_dict[key] < val:
-            out_dict[key] = val - b_dict[key]
-    return out_dict
-
 #### Classes
 # Note: The Primes class allows us to keep a list of primes so we don't have to
 # recalculate every time we calculate a prime factorization
@@ -45,7 +33,18 @@ class Primes():
                        173, 179, 181, 191, 193, 197, 199, 211, 223, 227]
         self.six_mult = 38
 
+    def __contains__(self, num):
+        return self.is_prime(num)
+
     def is_prime(self, num):
+        """ Returns True if the number is prime """
+        if num > self.six_mult * 6:
+            self.add_primes(num)
+        if num in self.primes:
+            return True
+        return False
+
+    def is_prime_no_add(self, num):
         """ Returns True if the number is prime """
         if num in self.primes:
             return True
@@ -67,9 +66,9 @@ class Primes():
     def add_primes(self, upto):
         """ Add prime numbers up to the upto number. """
         while self.six_mult * 6 < upto:
-            if self.is_prime(6 * self.six_mult + 1):
+            if self.is_prime_no_add(6 * self.six_mult + 1):
                 self.primes.append(6 * self.six_mult + 1)
-            if self.is_prime(6 * self.six_mult + 5):
+            if self.is_prime_no_add(6 * self.six_mult + 5):
                 self.primes.append(6 * self.six_mult + 5)
             self.six_mult += 1
 
@@ -77,10 +76,10 @@ class Primes():
         """ Add at least one more prime number to list of primes """
         added = False
         while not added:
-            if self.is_prime(6 * self.six_mult + 1):
+            if self.is_prime_no_add(6 * self.six_mult + 1):
                 self.primes.append(6 * self.six_mult + 1)
                 added = True
-            if self.is_prime(6 * self.six_mult + 5):
+            if self.is_prime_no_add(6 * self.six_mult + 5):
                 self.primes.append(6 * self.six_mult + 5)
                 added = True
             self.six_mult += 1
@@ -97,8 +96,8 @@ class Primes():
         while prime_mult < num:
             cur_test = self.primes[cur_prime_index]
             while partial % cur_test == 0:
-                if cur_test in prime_factor.keys():
-                    prime_factor[cur_test] += 1
+                if cur_test in prime_factor:
+                    prime_factor[cur_test] = prime_factor[cur_test] + 1
                 else:
                     prime_factor[cur_test] = 1
                 partial /= cur_test
@@ -113,52 +112,78 @@ class Primes():
 class Rational():
     """ Class to hold and manipulate rational numbers """
     prime = Primes()
-    def __init__(self, a, b=None, c=None):
-        # Helper Function
-        def parse_substr(substr):
-            """ Parse a substring and return a, b, c """
-            substr = substr.strip()
-            sep = substr.split(' ')
-            if len(sep) == 1:
-                if '/' in substr:
-                    frac = substr.split('/')
-                    if len(frac) == 2:
-                        a_var = int(frac[0])
-                        b_var = int(frac[1])
-                        c_var = None
-                else:
-                    a_var = int(a)
-                    b_var = None
+    # Class-Specific Helper Functions
+    @staticmethod
+    def dict_a_not_b(a_dict, b_dict):
+        """ returns a dictionary with keys from a_dict decremented by quantities
+        from b_dict. Used as a helper function in finding the LCM of two integers.
+        """
+        out_dict = {}
+        for key, val in a_dict.items():
+            if key not in b_dict.keys():
+                out_dict[key] = val
+            elif b_dict[key] < val:
+                out_dict[key] = val - b_dict[key]
+        return out_dict
+
+    @staticmethod
+    def parse_rational_from_string(substr):
+        """ Parse a substring and return in_a, in_b, in_c """
+        substr = substr.strip()
+        sep = substr.split(' ')
+        if len(sep) == 1:
+            if '/' in substr:
+                frac = substr.split('/')
+                if len(frac) == 2:
+                    a_var = int(frac[0])
+                    b_var = int(frac[1])
                     c_var = None
-            elif len(sep) == 2:
-                a_var = int(sep[0])
-                if '/' in sep[1]:
-                    frac = sep[1].split('/')
-                    if len(frac) == 2:
-                        b_var = int(frac[0])
-                        c_var = int(frac[1])
-                else:
-                    raise ValueError(f"Invalid string {substr} for Rational number")
+            else:
+                a_var = int(substr)
+                b_var = None
+                c_var = None
+        elif len(sep) == 2:
+            a_var = int(sep[0])
+            if '/' in sep[1]:
+                frac = sep[1].split('/')
+                if len(frac) == 2:
+                    b_var = int(frac[0])
+                    c_var = int(frac[1])
             else:
                 raise ValueError(f"Invalid string {substr} for Rational number")
-            return a_var, b_var, c_var
-
-        if isinstance(a, str):
-            a, b, c = parse_substr(a)
-        if c is None:
-            if b is None:
-                self.numerator = int(a)
-                self.denominator = 1
-            else:
-                self.numerator = int(a)
-                self.denominator = int(b)
         else:
-            if a >= 0:
-                self.numerator = int(a) * int(c) + int(b)
-                self.denominator = int(c)
+            raise ValueError(f"Invalid string {substr} for Rational number")
+        if b_var is None:
+            return (a_var,)
+        if c_var is None:
+            return a_var, b_var
+        return a_var, b_var, c_var
+
+    # Class Definition Proper
+    def __init__(self, *argv):
+        if len(argv) == 1:
+            if isinstance(argv[0], str):
+                argv = list(Rational.parse_rational_from_string(argv[0]))
+        argv = [int(x) if x == int(x) else x for x in argv]
+        for _x in argv:
+            if not isinstance(_x, int):
+                raise TypeError("No method to convert to Rational")
+        if len(argv) == 1:
+            self.numerator = argv[0]
+            self.denominator = 1
+        elif len(argv) == 2:
+            self.numerator = argv[0]
+            self.denominator = argv[1]
+        elif len(argv) == 3:
+            if argv[0] >= 0:
+                self.numerator = argv[0] * argv[2] + argv[1]
+                self.denominator = argv[2]
             else:
-                self.numerator = int(a) * int(c) - int(b)
-                self.denominator = int(c)
+                self.numerator = -argv[0] * argv[2] + argv[1]
+                self.denominator = argv[2]
+                self.numerator = -self.numerator
+        else:
+            raise TypeError(f"No method to convert {len(argv)} inputs to Rational")
         self.lowest_terms()
 
     ###### Comparison Operators
@@ -205,6 +230,10 @@ class Rational():
             return f"{self.numerator}"
         return f"\\frac{{{self.numerator}}}{{{self.denominator}}}"
 
+    def __repr__(self):
+        return f"{type(self).__module__}.{type(self).__name__}" +\
+                    f"(\'{self.numerator}/{self.denominator}\')"
+
     ##### Binary Operators
     def __add__(self, other):
         if isinstance(other, int):
@@ -245,7 +274,8 @@ class Rational():
         """ Returns pair (div, remainder) """
         if isinstance(other, float):
             return divmod(float(self), other)
-        mult = (float(self) - float(self) % float(other)) // other
+        mod = float(self) % float(other)
+        mult = (float(self) - mod) / float(other)
         return (mult, self - other * mult)
 
     def __pow__(self, other):
@@ -281,24 +311,23 @@ class Rational():
         return ~self * other
 
     def __rfloordiv__(self, other):
-        return self // other
+        return int(~self * other)
 
     def __rmod__(self, other):
-        return divmod(self, other)[1]
+        return self.__rdivmod__(other)[1]
 
     def __rdivmod__(self, other):
         """ Returns pair (div, remainder) """
-        if isinstance(other, float):
-            return divmod(float(self), other)
-        mult = (float(self) - float(self) % float(other)) // other
-        return (mult, self - other * mult)
+        mod = float(other) % float(self)
+        mult = (float(other) - mod) / float(self)
+        return (mult, other - self * mult)
 
     def __rpow__(self, other):
-        return self ** other
+        return other ** float(self)
 
     def __rmatmul__(self, other):
         """ @ : used here for LCM """
-        return self @ other
+        raise TypeError("LCM requires to Rational objects")
 
     ###### Assignment Operators
     def __iadd__(self, other):
@@ -355,14 +384,12 @@ class Rational():
 
     def __imatmul__(self, other):
         """ @ : used here for LCM """
-        return NotImplemented
+        self.numerator = self @ other
+        self.denominator = 1
 
     ###### Unary Operators
     def __neg__(self):
-        new_rat = abs(self)
-        if self < 0:
-            return abs(new_rat)
-        return new_rat * -1
+        return self * -1
 
     def __pos__(self):
         return abs(self)
@@ -408,7 +435,7 @@ class Rational():
             return other.denominator
         s_den = Rational.prime.factor(self.denominator)
         o_den = Rational.prime.factor(other.denominator)
-        o_not_s = dict_a_not_b(o_den, s_den)
+        o_not_s = Rational.dict_a_not_b(o_den, s_den)
         out_den = self.denominator
         for key, val in o_not_s.items():
             out_den *= key ** val
@@ -428,18 +455,18 @@ class Rational():
         if self.numerator < 0 and self.denominator < 0:
             self.numerator = -self.numerator
             self.denominator = -self.denominator
-        elif self.denominator < 0 and self.numerator >= 0:
+        elif self.denominator < 0:
             negative = True
             self.denominator = - self.denominator
-        elif self.denominator > 0 and self.numerator <= 0:
+        elif self.numerator < 0:
             negative = True
             self.numerator = -self.numerator
         num_fac = Rational.prime.factor(self.numerator)
         den_fac = Rational.prime.factor(self.denominator)
         common_fac = 1
-        for fac in num_fac:
-            if fac in den_fac.keys():
-                common_fac *= fac ** min(num_fac[fac], den_fac[fac])
+        for fac, power in num_fac.items():
+            if fac in den_fac:
+                common_fac *= fac ** min(power, den_fac[fac])
         self.numerator /= common_fac
         self.denominator /= common_fac
         if isinstance(self.numerator, float):
@@ -458,79 +485,103 @@ class Polynomial():
     f(x) = sum_{i=0}^n{a_ix^i} where the coefficient list is:
         a_0, a_1, a_2, ..., a_n
     """
+    # Class Specific Helper Functions
+    @staticmethod
+    def parse_name(name_str):
+        """ Return function name and variable from function def. """
+        if '(' in name_str:
+            name = name_str.split('(')[0]
+            if ')' in name_str.split('(')[1]:
+                var = name_str.split('(')[1].split(')')[0]
+        else:
+            var = 'x'
+            name = name_str
+        return name, var
+    @staticmethod
+    def parse_coeff(coef):
+        """ Returns a float, int, or Rational from a string """
+        if '/' in coef:
+            return Rational(coef)
+        if '.' in coef:
+            return float(coef)
+        return int(coef)
+    @staticmethod
+    def parse_term(substr, var, oper):
+        """ Parse a single substring of the form ax^b """
+        substr = substr.strip()
+        if substr[0] == '-':
+            oper = '+' if oper == '-' else '-'
+        if var not in substr:
+            return (0, Polynomial.parse_coeff(substr))
+        coef, power = substr.split(var)
+        coef = Polynomial.parse_coeff(coef)
+        power = power.strip()
+        if power == '':
+            power = 1
+        else:
+            if power[0] == '^':
+                power = power[1:]
+            power = int(power)
+        return (power, coef)
+    @staticmethod
+    def split_at_pm(substr):
+        """ Splits string at + or minus and returns a triple
+        (substr a, +/-, substr b)
+        """
+        if '+' not in substr and '-' not in substr:
+            raise ValueError('Cannot split string at +/-')
+        br_plus = substr.find('+')
+        br_minus = substr.find('-')
+        br_pt = min(br_plus, br_minus)
+        if br_pt == -1:
+            br_pt = max(br_plus, br_minus)
+        return substr[:br_pt], substr[br_pt], substr[br_pt + 1:]
 
-    def __init__(self, coefficients):
+    # Main Class Functions
+
+    def __init__(self, *argv):
+    #def __init__(self, coefficients):
+        if len(argv) == 1:
+            if isinstance(argv[0], (list, str)):
+                coefficients = argv[0]
+            else:
+                coefficients = list(argv)
+        else:
+            coefficients = list(argv)
         self.var = 'x'
         self.name = 'f'
         if isinstance(coefficients, str):
             coefficients = self.parse_str(coefficients)
         self.coef = coefficients
+        self.remove_trailing_zeroes()
+
+    def remove_trailing_zeroes(self):
+        """ Removes unnecessary zeroes from coefficient list """
+        while len(self.coef) > 1 and self.coef[-1] == 0:
+            self.coef = self.coef[:-1]
 
     def parse_str(self, coefficients):
         """ Parse a string to get coefficients. """
-        # Helper Functions
-        def parse_name(name_str):
-            """ Return function name and variable from function def. """
-            if '(' in name_str:
-                name = name_str.split('(')[0]
-                if ')' in name_str.split('(')[1]:
-                    var = name_str.split('(')[1].split(')')[0]
-            else:
-                var = 'x'
-                name = name_str
-            return name, var
-        def parse_coeff(coef):
-            """ Returns a float, int, or Rational """
-            if '/' in coef:
-                return Rational(coef)
-            if '.' in coef:
-                return float(coef)
-            return int(coef)
-        def parse_substr(substr, var, oper):
-            """ Parse a single substring of the form ax^b """
-            substr = substr.strip()
-            if substr[0] == '-':
-                oper = '+' if oper == '-' else '-'
-            if var not in substr:
-                return (0, parse_coeff(substr))
-            coef, power = substr.split(var)
-            coef = parse_coeff(coef)
-            power = power.strip()
-            if power == '':
-                power = 1
-            else:
-                if power[0] == '^':
-                    power = power[1:]
-                power = int(power)
-            return (power, coef)
-
         if '=' in coefficients:
             def_str, code_st = coefficients.split('=')
-            self.name, self.var = parse_name(def_str)
+            self.name, self.var = Polynomial.parse_name(def_str)
         else:
             code_st = coefficients
         out_coef = {}
         oper = '+'
         while '+' in code_st or '-' in code_st:
             cur_oper = oper
-            br_pt = min(code_st.find('+'), code_st.find('-'))
-            if br_pt == -1:
-                if code_st.find('+') != -1:
-                    br_pt = code_st.find('+')
-                elif code_st.find('-') != -1:
-                    br_pt = code_st.find('-')
-            cur, oper, code_st = code_st[:br_pt], code_st[br_pt], \
-                    code_st[br_pt+1:]
-            power, coef = parse_substr(cur, self.var, cur_oper)
-            if power in out_coef.keys():
+            cur, oper, code_st = Polynomial.split_at_pm(code_st)
+            power, coef = Polynomial.parse_term(cur, self.var, cur_oper)
+            if power in out_coef:
                 out_coef[power] += coef if cur_oper == '+' else -coef
             else:
                 out_coef[power] = coef if cur_oper == '+' else -coef
         cur_oper = oper
         cur = code_st
         cur = cur.strip()
-        power, coef = parse_substr(cur, self.var, cur_oper)
-        if power in out_coef.keys():
+        power, coef = Polynomial.parse_term(cur, self.var, cur_oper)
+        if power in out_coef:
             out_coef[power] += coef if cur_oper == '+' else -coef
         else:
             out_coef[power] = coef if cur_oper == '+' else -coef
@@ -545,25 +596,38 @@ class Polynomial():
 
     def __str__(self):
         return self.print()
-        out_str = f"{self.name}({self.var})="
-        for power, coef in enumerate(self.coef):
-            if coef != 0:
-                combine = '+'
-                mult = 1
-                if coef < 0:
-                    combine = '-'
-                    mult = -1
-                if power == 0:
-                    out_str += f"{coef}"
-                elif power == 1:
-                    out_str += f"{combine}{mult * coef}{self.var}"
-                elif power <=9:
-                    out_str += f"{combine}{mult * coef}{self.var}^{power}"
-                else:
-                    out_str += f"{combine}{mult * coef}{self.var}^{{{power}}}"
-        return out_str
+
+    @staticmethod
+    def print_term(power, coef, variable):
+        """ Builds an output string for a single term """
+        if coef == 0:
+            return ''
+        combine = '+'
+        mult = 1
+        if coef < 0:
+            combine = '-'
+            mult = -1
+        if power == 0:
+            term = f"{combine}{mult * coef}"
+        elif power == 1:
+            if mult * coef == 1:
+                term = f"{combine}{variable}"
+            else:
+                term = f"{combine}{mult * coef}{variable}"
+        elif power <=9:
+            if mult * coef == 1:
+                term = f"{combine}{variable}^{power}"
+            else:
+                term = f"{combine}{mult * coef}{variable}^{power}"
+        else:
+            if mult * coef == 1:
+                term = f"{combine}{variable}^{{{power}}}"
+            else:
+                term = f"{combine}{mult * coef}{variable}^{{{power}}}"
+        return term
 
     def print(self, name=None, variable=None, reverse=False):
+        """ Build an output string """
         if name is None:
             name = self.name
         if variable is None:
@@ -571,37 +635,15 @@ class Polynomial():
         if name is not None:
             out_str = f"{name}({variable})="
         else:
-            out_str = f""
+            out_str = ""
         terms = []
         for power, coef in enumerate(self.coef):
-            if coef != 0:
-                combine = '+'
-                mult = 1
-                if coef < 0:
-                    combine = '-'
-                    mult = -1
-                if power == 0:
-                    terms.append(f"{combine}{mult * coef}")
-                elif power == 1:
-                    if mult * coef == 1:
-                        terms.append(f"{combine}{variable}")
-                    else:
-                        terms.append(f"{combine}{mult * coef}{variable}")
-                elif power <=9:
-                    if mult * coef == 1:
-                        terms.append(f"{combine}{variable}^{power}")
-                    else:
-                        terms.append(f"{combine}{mult * coef}{variable}^{power}")
-                else:
-                    if mult * coef == 1:
-                        terms.append(f"{combine}{variable}^{{{power}}}")
-                    else:
-                        terms.append(f"{combine}{mult * coef}{variable}^{{{power}}}")
+            terms.append(Polynomial.print_term(power, coef, variable))
         if reverse:
             terms = terms[::-1]
-        term_str = f""
-        for term in terms:
-            term_str += term
+        term_str = ''.join(terms)
+        if term_str == '':
+            term_str = '0'
         if term_str[0] == '+':
             term_str = term_str[1:]
         return out_str + term_str
@@ -616,7 +658,7 @@ class Polynomial():
         return self.get_degree()
 
     def __sub__(self, other):
-        if type(other) in [int, float]:
+        if type(other) in [int, float, Rational]:
             return self.const_add(-1 * other)
         if len(self) < len(other):
             return other - self
@@ -628,14 +670,16 @@ class Polynomial():
         return Polynomial(s_coef)
 
     def __add__(self, other):
-        if type(other) in [int, float]:
+        if type(other) in [int, float, Rational]:
             return self.const_add(other)
         if len(self) < len(other):
             return other + self
         if len(self) == len(other):
             a_coef = [se + ot for se, ot in zip(self.coef, other.coef)]
         else:
-            coef = other.append_zeroes(len(self.coef)).coef
+            coef = copy.deepcopy(other.coef)
+            ap_coef = [0] * (len(self) - len(other))
+            coef += ap_coef
             a_coef = [se + ot for se, ot in zip(self.coef, coef)]
         return Polynomial(a_coef)
 
@@ -646,10 +690,9 @@ class Polynomial():
         return self.const_mult(-1).__add__(other)
 
     def __mul__(self, other):
-        if type(other) in [int, float]:
+        if type(other) in [int, float, Rational]:
             return self.const_mult(other)
         m_coef = [Rational(0)] * (len(self) + len(other) + 1)
-        print(m_coef)
         for s_pow, s_coef in enumerate(self.coef):
             for o_pow, o_coef in enumerate(other.coef):
                 m_coef[s_pow + o_pow] = m_coef[s_pow + o_pow] + s_coef * o_coef
@@ -657,24 +700,30 @@ class Polynomial():
 
     def __truediv__(self, other):
         if type(other) in [int, float, Rational]:
-            return self * (1 / other)
-        def partial_div(numerator, denominator):
-            """ Find the coefficient c and the power p of the factor that
-            divides out the highest degree.
-
-            Return cx^p, remainder
-            """
-            num = numerator.coef
-            den = denominator.coef
-            if len(den) > len(num):
-                return None, numerator
-            ######### Fill in here   TODO
+            return (self * (1 / other), 0)
+        remainder = self
+        quotient = Polynomial([0])
+        while len(remainder) >= len(other):
+            term_list = [0] * (len(remainder) - len(other) + 1)
+            if isinstance(remainder.coef[-1], float) or \
+                           isinstance(other.coef[-1], float):
+                cur_coef = remainder.coef[-1] / other.coef[-1]
+            elif isinstance(remainder.coef[-1], Rational) or \
+                           isinstance(other.coef[-1], Rational):
+                cur_coef = remainder.coef[-1] / other.coef[-1]
+            else:
+                cur_coef = Rational(remainder.coef[-1], other.coef[-1])
+            term_list[-1] = cur_coef
+            term = Polynomial(term_list)
+            quotient += term
+            remainder = remainder - term * other
+        return (quotient, remainder)
 
     def __rmult__(self, other):
         return self * other
 
     def factor(self):
-        """ Returns a list of Polynomials. All but the last polynomial in th
+        """ Returns a list of Polynomials. All but the last polynomial in the
         list is a binomial found using the rational roots theorem. The last is
         whatever is left over.
         """
@@ -683,7 +732,7 @@ class Polynomial():
         partial_poly = Polynomial(self.coef)
         while factorable:
             factorable = False
-            possible_roots = partial_poly.get_potential_roots()
+            possible_roots = partial_poly.get_potential_rational_roots()
             for possible_root in possible_roots:
                 if partial_poly.is_root(possible_root):
                     factorable = True
@@ -692,7 +741,7 @@ class Polynomial():
         factors.append(partial_poly)
         return factors
 
-    def get_potential_roots(self):
+    def get_potential_rational_roots(self):
         """ Returns a list of all rational numbers that could be roots based on
         the Rational Root Theorem.
         """
@@ -723,7 +772,7 @@ class Polynomial():
 
     def is_root(self, other):
         """ Determines if other (a number of some form) is a root. """
-        div, rem = self.synthetic_division(other)
+        rem = self.synthetic_division(other)[1]
         if rem == 0:
             return True
         return False
@@ -768,9 +817,9 @@ class Polynomial():
     def get_degree(self):
         """ Return the highest power for the polynomial """
         coef = copy.deepcopy(self.coef)
-        while coef[-1] == 0:
+        while len(coef) >= 1 and coef[-1] == 0:
             coef = coef[:-1]
-        return len(coef) - 1
+        return max(0, len(coef) - 1)
 
     def evaluate(self, var):
         """ Returns a number when function is evaluated at x """
@@ -798,30 +847,33 @@ class Polynomial():
         i_coeff = [const] + i_coeff
         return Polynomial(i_coeff)
 
-    def get_zeroes(self, step=0.0001):
-        """ Returns a list of zeroes. These are exact if degree < 3, or
-        estimated otherwise.
-        """
-        if len(self) == 0:
-            return None
-        if len(self) == 1:
-            if self.coef[0] == 0:
-                return []
-            return None
-        if len(self) == 2:
-            co_c, co_b, co_a = self.coef
-            disc = co_b - 4 * co_a * co_c
-            if disc < 0:
-                return None
-            if disc == 0:
-                return [-co_b / 2 / co_a]
-            return [(-co_b - disc**(1/2)) / 2 / co_a, (-co_b + disc**(1/2)) / 2/ co_a]
-        ############### Not yet implemented      TODO
+# TODO
+#    def newtons_method, start_pt, error=0.000001):
+#    """ Returns a tuple consisting of a boolean saying whether Newton's Method
+#    converged using that start_pt and an approximate zero that is within error
+#    of the actual zero.
+#    Returns: (converged, zero)
+#    """
 
-    def dist_to_point(self, x, y, step=0.0001):
-        """ Returns the shortest distance from a point to the polynomial. """
-        der = self.derive()
-        ############## Not yet implemented      TODO
+# TODO
+#    def get_zeroes(self, step=0.0001):
+#        """ Returns a list of zeroes. These are exact if degree < 3, or
+#        estimated otherwise.
+#        """
+#        if len(self) == 0:
+#            return None
+#        if len(self) == 1:
+#            if self.coef[0] == 0:
+#                return []
+#            return None
+#        if len(self) == 2:
+#            co_c, co_b, co_a = self.coef
+#            disc = co_b - 4 * co_a * co_c
+#            if disc < 0:
+#                return None
+#            if disc == 0:
+#                return [-co_b / 2 / co_a]
+#            return [(-co_b - disc**(1/2)) / 2 / co_a, (-co_b + disc**(1/2)) / 2/ co_a]
 
 
 
@@ -829,22 +881,37 @@ class Polynomial():
 
 
 if __name__ == "__main__":
+    q = Polynomial(0,0,1)
+    t = Polynomial(0,0,0,Rational(2,3))
+    print("Q", q)
+    print("T", t)
+    print("Q+T", q+t)
+    print(3.5 % Rational(2, 3))
     a1 = Rational('5/3')
     print(Rational(1))
     print(a1)
     print(a1+1)
     print("zeropower",a1 ** 0)
-    h_str = 'h(t)=2/3+3/5t+5t^3'
-    h = Polynomial(h_str)
+    H_STR = 'h(t)=2/3+3/5t+5t^3'
+    h = Polynomial(H_STR)
     print(type(h))
-    print(type(h)==Polynomial)
-    print(h_str)
+    print(isinstance(h, Polynomial))
+    print(H_STR)
     print(h)
+    print(Polynomial([1,2]))
+    print(Polynomial([2,5,1]))
+    print(Polynomial([1,2]) * Polynomial([2,5,1,0]))
     a1 = Rational('5/3')
     print(f"{h.name}({a1})={h(a1)}")
+    y = Polynomial([2])
+    print(y)
+    print(f"{y.name}({2})={y(2)}")
     y = Polynomial([2,4,1,5,2])
     print(y)
     print(f"{y.name}({2})={y(2)}")
+    d = Polynomial([1,3])
+    print(f"{y} / {d} = {(y/d)[0]} R:{(y/d)[1]}")
+    print(y/Polynomial([1,3]))
     y = Polynomial([1,1,3])
     print(y)
     print(f"{y.name}({a1})={y(a1)}")
@@ -853,13 +920,13 @@ if __name__ == "__main__":
     b = Polynomial([1,-1])
     c= a * b
     print(c.print(reverse=True))
-    div, rem = Polynomial([7,1,-1,2,-3,4]).synthetic_division(Rational('2/3'))
-    print(f"{div.print(reverse=True)} R:{rem}")
+    divisor, remain = Polynomial([7,1,-1,2,-3,4]).synthetic_division(Rational('2/3'))
+    print(f"{divisor.print(reverse=True)} R:{remain}")
     facs = Polynomial([3,5,2]).factor()
-    print(facs[0])
-    print(facs[1])
+    print('facs[0]=',facs[0])
+    print('facs[1]=',facs[1])
     mul = facs[0] * facs[1]
-    print(mul.coef)
+    print('mul.coef',mul.coef)
     print(mul)
     a = Rational(50,2)
     print(a)

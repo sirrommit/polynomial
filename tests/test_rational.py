@@ -92,8 +92,12 @@ class TestString(unittest.TestCase):
         self.assertEqual(str(a), '3')
 
     def test_str_fraction(self):
-        a = Rational(2,6)
+        a = Rational(2, 6)
         self.assertEqual(str(a), '\\frac{1}{3}')
+
+    def test_repr(self):
+        a = Rational(2, 6)
+        self.assertEqual(repr(a).split('.')[-1], 'Rational(\'1/3\')')
 
 class TestComparisonOperators(unittest.TestCase):
     def test_less_than_rational(self):
@@ -211,8 +215,76 @@ class TestBinaryOperators(unittest.TestCase):
     def test_floordiv_float(self):
         self.assertEqual(Rational(1, 2) // .5, 1)
 
+    def test_mod_rational(self):
+        self.assertEqual(Rational(5, 2) % Rational(1, 2), 0)
+        self.assertAlmostEqual(Rational(3, 1) % Rational(2, 3), Rational(1, 3))
+
+    def test_mod_int(self):
+        self.assertEqual(Rational(5, 2) % 2, Rational(1, 2))
+
+    def test_mod_float(self):
+        self.assertEqual(Rational(5, 2) % .5, 0)
+
+    def test_divmod_rational(self):
+        self.assertEqual(divmod(Rational(5, 2), Rational(1, 2)), (5, 0))
+
+    def test_divmod_int(self):
+        self.assertEqual(divmod(Rational(5, 2), 2), (1, Rational(1, 2)))
+
+    def test_divmod_float(self):
+        self.assertEqual(divmod(Rational(5, 2), .5), (5, 0))
+
+    def test_pow_int(self):
+        self.assertEqual(Rational(1,2) ** 3, Rational(1, 8))
+
+    def test_pow_nonint(self):
+        self.assertEqual(Rational(1,4) ** .5, Rational(1, 2))
+        self.assertEqual(Rational(1,4) ** Rational(1, 2), Rational(1, 2))
+
+    def test_lcm_rational(self):
+        self.assertEqual(Rational(1, 3) @ Rational(1, 2), 6)
+        self.assertEqual(Rational(1, 18) @ Rational(1, 6), 18)
+        self.assertEqual(Rational(1, 18) @ Rational(1, 27), 54)
 
 class TestReverseBinaryOperators(unittest.TestCase):
+    def test_radd(self):
+        self.assertEqual(3 + Rational(1, 2), Rational(3, 1, 2))
+        self.assertEqual(3.5 + Rational(1, 2), 4)
+
     def test_rsub(self):
         self.assertEqual(3 - Rational(1, 2), Rational(5, 2))
+        self.assertEqual(3.5 - Rational(1, 2), 3)
+
+    def test_rmul(self):
+        self.assertEqual(3 * Rational(1, 2), Rational(3, 2))
+        self.assertEqual(3.5 * Rational(1, 2), Rational(7, 4))
+
+    def test_rdiv(self):
+        self.assertEqual(3 / Rational(1, 2), 6)
+        self.assertEqual(3.5 / Rational(1, 2), 7)
+
+    def test_rfloordiv(self):
+        self.assertEqual(3 // Rational(2, 3), 4)
+        self.assertEqual(3.5 // Rational(3, 2), 2)
+
+    def test_rmod(self):
+        self.assertAlmostEqual(3 % Rational(2, 3), Rational(1, 3))
+        self.assertAlmostEqual(3.5 % Rational(2, 3), Rational(1, 6))
+
+    def test_rdivmod(self):
+        self.assertAlmostEqual(divmod(3, Rational(2, 3))[0], 4)
+        self.assertAlmostEqual(divmod(3, Rational(2, 3))[1], Rational(1, 3))
+        self.assertAlmostEqual(divmod(3.5, Rational(2, 3))[0], 5)
+        self.assertAlmostEqual(divmod(3.5, Rational(2, 3))[1], Rational(1, 6))
+
+    def test_rpow(self):
+        self.assertAlmostEqual(4 ** Rational(1, 2), 2)
+        self.assertAlmostEqual(4 ** Rational(3, 2), 8)
+
+    def test_rlcm(self):
+        with self.assertRaises(TypeError):
+            3 @ Rational(1, 3)
+
+
+
 
