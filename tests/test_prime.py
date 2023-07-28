@@ -1,7 +1,7 @@
 import unittest
 import math
 
-from src.polynomial_education.polynomial import Primes
+from src.polynomial_education.ratio.primes import Primes
 
 class TestIsPrime(unittest.TestCase):
     def test_low_yes(self):

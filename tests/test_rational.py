@@ -1,7 +1,7 @@
 import unittest
 import math
 
-from src.polynomial_education.polynomial import Rational
+from src.polynomial_education.ratio.rational import Rational
 
 class TestInit(unittest.TestCase):
     def test_1_in(self):
