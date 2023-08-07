@@ -180,7 +180,7 @@ class Polynomial():
         return self.output_str()
 
     @staticmethod
-    def _print_latex_term(power, coef, variable):
+    def _print_term(power, coef, variable, braces=('',''), mult_char='', frac={'format':None,'style':None,'denominator':None}):
         """ Builds an output string for a single term """
         if coef == 0:
             return ''
@@ -189,24 +189,38 @@ class Polynomial():
         if coef < 0:
             combine = '-'
             mult = -1
+        coef = mult * coef
+        if isinstance(coef, Rational):
+            for key, value in frac.items():
+                coef.set_meta(key, value)
         if power == 0:
             term = f"{combine}{mult * coef}"
         elif power == 1:
             if mult * coef == 1:
-                term = f"{combine}{variable}"
+                term = f"{combine}{mult_char}{variable}"
             else:
                 term = f"{combine}{mult * coef}{variable}"
         elif power <=9:
             if mult * coef == 1:
-                term = f"{combine}{variable}^{power}"
+                term = f"{combine}{variable}^{braces[0]}{power}{braces[1]}"
             else:
-                term = f"{combine}{mult * coef}{variable}^{power}"
+                term = f"{combine}{mult * coef}{mult * coef}{variable}^{braces[0]}{power}{braces[1]}"
         else:
             if mult * coef == 1:
-                term = f"{combine}{variable}^{{{power}}}"
+                term = f"{combine}{variable}^{power}"
             else:
-                term = f"{combine}{mult * coef}{variable}^{{{power}}}"
+                term = f"{combine}{mult * coef}{mult * coef}{variable}^{braces[0]}{power}{braces[1]}"
         return term
+
+    @staticmethod
+    def _print_pgf_term(power, coef, variable):
+        """ Builds an output string for a single term """
+        return Polynomial._print_term(power, coef, variable, braces=('',''), mult_char='*')
+
+    @staticmethod
+    def _print_latex_term(power, coef, variable):
+        """ Builds an output string for a single term """
+        return Polynomial._print_term(power, coef, variable, braces=('{','}'), mult_char='')
 
     def _get_meta(self, key):
         """ Returns meta data defined by key. If not defined, returns the
@@ -250,6 +264,28 @@ class Polynomial():
             term_str = term_str[1:]
         return out_str + term_str
 
+    def _print_pgf(self, name=None, variable=None, descending=False):
+        """ Build a raw text based output string """
+        if name is None:
+            name = self._get_meta('name')
+        if variable is None:
+            variable = self._get_meta('var')
+        if name is not None and variable is not None and not self._get_meta('include_LHS'):
+            out_str = f"{name}({variable})="
+        else:
+            out_str = ""
+        terms = []
+        for power, coef in enumerate(self.coef):
+            terms.append(Polynomial._print_pgf_term(power, coef, variable))
+        if descending:
+            terms = terms[::-1]
+        term_str = ''.join(terms)
+        if term_str == '':
+            term_str = '0'
+        if term_str[0] == '+':
+            term_str = term_str[1:]
+        return out_str + term_str
+
     def _print_str(self, name=None, variable=None, descending=False):
         """ Build a raw text based output string """
         if name is None:
@@ -262,7 +298,7 @@ class Polynomial():
             out_str = ""
         terms = []
         for power, coef in enumerate(self.coef):
-            terms.append(Polynomial._print_latex_term(power, coef, variable))
+            terms.append(Polynomial._print_term(power, coef, variable))
         if descending:
             terms = terms[::-1]
         term_str = ''.join(terms)

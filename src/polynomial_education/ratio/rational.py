@@ -79,6 +79,12 @@ class Rational():
                 'denominator': None,
     }
     prime = prime.Primes()
+    
+    def set_meta(self, key, value):
+        """ Set metadata for how __str__ behaves """
+        if key not in Rational.meta:
+            raise KeyError(f"{key} is not a metadata key")
+        Rational.meta[key] = value
 
     # Class-Specific Helper Functions
     @staticmethod
@@ -162,6 +168,15 @@ class Rational():
             raise TypeError(f"No method to convert {len(argv)} inputs to Rational")
         self.lowest_terms()
 
+    def set_meta(self, key, value, single=True):
+        """ Set metadata for how __str__ behaves """
+        if key not in self.meta:
+            raise KeyError(f"{key} is not a metadata key")
+        if single:
+            self.single_meta[key] = value
+        else:
+            self.meta[key] = value
+
     ###### Comparison Operators
     def __lt__(self, other):
         if isinstance(other, float):
@@ -222,7 +237,8 @@ class Rational():
 
     def _base_str_rep(self, denominator=None):
         """ Build the basis for all string representations """
-        denominator = self._get_meta('denominator')
+        if denominator is None:
+            denominator = self._get_meta('denominator')
         numerator = self.get_numerator(denominator=denominator)
         if denominator is None:
             denominator = self.denominator
